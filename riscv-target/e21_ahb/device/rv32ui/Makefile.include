@@ -1,0 +1,44 @@
+ifndef FEDERATION_DIR
+    $(error federation directory FEDERATION_DIR is undefined)
+endif
+ifndef TARGET_SIM
+    $(error target simulator TARGET_SIM is undefined)
+endif
+
+ifeq ($(shell command -v $(TARGET_SIM) 2> /dev/null),)
+    $(error Target simulator executable '$(TARGET_SIM)` not found)
+endif
+
+RUN_TARGET=\
+    $(TARGET_SIM) --isa=rv32ui \
+				+random_seed=0 \
+				+signature_size=8192 \
+        +signature=$(work_dir_isa)/$(*).signature.output \
+        +test_program=$(work_dir_isa)/$< \
+				+testfile=$(work_dir_isa)/$<.hex \
+				2> $(work_dir_isa)/$@; \
+    		cat $(work_dir_isa)/$(*).signature.output | sed 's/.\{8\}/& /g' | \
+    		awk '{print $$4 " " $$3 " " $$2 " " $$1}' | sed 's/ /\n/g' > temp; \
+    		head -$$(expr $$(expr $$((16\#$$(grep end_signature $(work_dir_isa)/$<.readelf | awk '{print $$2}'))) \
+				- $$((16\#$$(grep begin_signature $(work_dir_isa)/$<.readelf | awk '{print $$2}')))) / 4  ) temp > \
+				$(work_dir_isa)/$(*).signature.output; rm temp;
+
+RISCV_PREFIX   ?= riscv32-unknown-elf-
+RISCV_GCC      ?= $(RISCV_PREFIX)gcc
+RISCV_OBJDUMP  ?= $(RISCV_PREFIX)objdump
+RISCV_OBJCOPY  ?= $(RISCV_PREFIX)objcopy
+RISCV_READELF  ?= $(RISCV_PREFIX)readelf
+RISCV_GCC_OPTS ?= -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles
+BIN2HEX 			 ?= $(FEDERATION_DIR)/software/scripts/bin2hex
+
+COMPILE_TARGET=\
+	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) \
+		-I$(ROOTDIR)/riscv-test-env/ \
+		-I$(ROOTDIR)/riscv-test-env/p/ \
+		-I$(TARGETDIR)/$(RISCV_TARGET)/ \
+		-T$(TARGETDIR)/$(RISCV_TARGET)/link.ld $$< \
+		-o $(work_dir_isa)/$$@; \
+	$$(RISCV_OBJCOPY) -O binary $(work_dir_isa)/$$@ $(work_dir_isa)/$$@.bin; \
+	$$(BIN2HEX) --bit-width=32 $(work_dir_isa)/$$@.bin $(work_dir_isa)/$$@.hex; \
+	$$(RISCV_READELF) -a $(work_dir_isa)/$$@ > $(work_dir_isa)/$$@.readelf; \
+	$$(RISCV_OBJDUMP) -D $(work_dir_isa)/$$@ > $(work_dir_isa)/$$@.objdump
