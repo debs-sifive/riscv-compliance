@@ -10,8 +10,6 @@ endif
 calc_sign_size=$$(expr $$(expr $$((16\#$$(grep end_signature $(work_dir_isa)/$<.readelf | awk '{print $$2}')))\
 							 - $$((16\#$$(grep begin_signature $(work_dir_isa)/$<.readelf | awk '{print $$2}')))) / 4)
 
-#tohost_address=$(grep '[^\.]\<tohost\>' $(work_dir_isa)/$<.readelf | awk '{print $$2}')
-
 RUN_TARGET=\
 	cd $(FORMALSPEC_DIR); \
 	$(TARGET_SIM) \
