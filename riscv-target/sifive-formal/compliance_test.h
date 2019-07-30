@@ -31,12 +31,17 @@
   			sw t4, 0(t1);\
   			addi t2, t2, -1; \
   			bgtz t2, 1b; \
-        beq x0, TESTNUM, fail; \
-				pass:																														\
-				1:																																	\
-				j 1b;																															\
+        bnez TESTNUM, pass; \
         fail:\
-        fence \
+        addi t1, x0, 2; \
+        j 1f; \
+				pass:																														\
+        addi t1, x0, 1; \
+        1: \
+        la t0, tohost; \
+        sw t1, 0(t0); \
+        j 1b;
+          
 
 #define RV_COMPLIANCE_RV32M                                                   \
         RVTEST_RV32M                                                          \

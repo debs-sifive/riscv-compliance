@@ -3,6 +3,7 @@ ENTRY(_start)
 
 SECTIONS
 {
+  . = 0x80000000;
   .text.init : { *(.text.init) }
   . = ALIGN(0x1000);
   .tohost : { *(.tohost) }
@@ -12,7 +13,7 @@ SECTIONS
   .data : { *(.data) }
   .data.string : { *(.data.string) }
   .bss : { *(.bss) }
-	PROVIDE(read_signature = 0xffc00);
+	PROVIDE(read_signature = 0x800ffc00);
   _end = .;
 }
 

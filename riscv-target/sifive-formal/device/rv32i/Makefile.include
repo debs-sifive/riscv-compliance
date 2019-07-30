@@ -2,7 +2,7 @@ ifndef FORMALSPEC_DIR
     $(error FORMALSPEC_DIR is undefined)
 endif
 
-TARGET_SIM ?= $(FORMALSPEC_DIR)/obj_dir/Vsystem
+TARGET_SIM ?= $(FORMALSPEC_DIR)/runElf.sh
 ifeq ($(shell command -v $(TARGET_SIM) 2> /dev/null),)
     $(error Target simulator executable '$(TARGET_SIM)` not found)
 endif
@@ -10,17 +10,17 @@ endif
 calc_sign_size=$$(expr $$(expr $$((16\#$$(grep end_signature $(work_dir_isa)/$<.readelf | awk '{print $$2}')))\
 							 - $$((16\#$$(grep begin_signature $(work_dir_isa)/$<.readelf | awk '{print $$2}')))) / 4)
 
+#tohost_address=$(grep '[^\.]\<tohost\>' $(work_dir_isa)/$<.readelf | awk '{print $$2}')
+
 RUN_TARGET=\
+	cd $(FORMALSPEC_DIR); \
 	$(TARGET_SIM) \
-		+pass_address=$$(grep pass $(work_dir_isa)/$<.readelf | awk '{print $$2}') \
-		+pass_address=$$(grep pass $(work_dir_isa)/$<.readelf | awk '{print $$2}') \
-    +test_program=$(work_dir_isa)/$< \
-		+testfile=$(work_dir_isa)/$<.hex \
-  	+signature=$(work_dir_isa)/$(*).signature.output \
-		+sign_size=1024 \
-  	$(work_dir_isa)/$< 2> $(work_dir_isa)/$@; \
-		head -$(calc_sign_size) $(work_dir_isa)/$(*).signature.output > temp; \
-	 	mv temp	$(work_dir_isa)/$(*).signature.output;
+		--path $(work_dir_isa)/$< \
+		--haskell --signature $(work_dir_isa)/$(*).signature.output --sign_size 1024; \
+	cd $(ROOTDIR); \
+	$(work_dir_isa)/$< 2> $(work_dir_isa)/$@; \
+	head -$(calc_sign_size) $(work_dir_isa)/$(*).signature.output > temp; \
+ 	mv temp	$(work_dir_isa)/$(*).signature.output;
 
 RISCV_PREFIX   ?= riscv32-unknown-elf-
 RISCV_GCC      ?= $(RISCV_PREFIX)gcc
